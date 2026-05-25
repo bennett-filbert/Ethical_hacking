@@ -2,7 +2,7 @@
 function copyText(elementId) {
   const el = document.getElementById(elementId);
   if (!el) return;
-  const text = el.innerText;
+  const text = el.innerText || el.textContent;
   navigator.clipboard.writeText(text).then(() => {
     // Find the button that triggered the copy (sibling of element's parent)
     const btn = el.parentElement?.querySelector(".btn-copy");

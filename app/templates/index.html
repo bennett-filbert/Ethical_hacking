@@ -1,89 +1,89 @@
 {% extends "base.html" %}
-{% block title %}Home — Operation Digital Turf War{% endblock %}
+{% block title %}Briefing - Atlas Breach Lab{% endblock %}
 
 {% block content %}
 <div class="hero">
-  <div class="hero-tag">CLASSIFIED // EYES ONLY</div>
-  <h1 class="hero-title">Operation<br><span class="green">Digital Turf War</span></h1>
+  <div class="hero-tag">TRAINING RANGE // AUTHORIZED LAB ONLY</div>
+  <h1 class="hero-title">Atlas<br><span class="green">Breach Lab</span></h1>
   <p class="hero-sub">
-    A three-stage Capture-the-Flag cybersecurity lab.<br>
-    Atlas Core vs BlueCore. The network is at stake.
+    Three focused Capture-the-Flag challenges built around client leaks,
+    broken authorization, and command injection.
   </p>
 </div>
 
 <div class="mission-grid">
 
-  <a href="/mission1" class="mission-card hard">
+  <a href="/mission4" class="mission-card hard">
     <div class="card-header">
-      <span class="badge hard-badge">HARD · 300 PTS</span>
-      <span class="card-category">Web Recon</span>
+      <span class="badge hard-badge">300 PTS</span>
+      <span class="card-category">Client Recon</span>
     </div>
-    <h2 class="card-title">Mission 1</h2>
-    <h3 class="card-name">Staff Portal Leak</h3>
+    <h2 class="card-title">Challenge 1</h2>
+    <h3 class="card-name">Ghost Bundle</h3>
     <p class="card-desc">
-      Atlas Core's internal portal may be hiding something beyond the visible page.
-      Thorough investigation of the deployment environment may reveal more.
+      A frontend bundle shipped with retired telemetry metadata. Inspect the
+      browser-delivered assets and undo a weak transformation.
     </p>
-    <div class="card-tools">Tools: Browser, DevTools</div>
+    <div class="card-tools">Tools: DevTools, CyberChef, Python</div>
     <div class="card-flag-hint">Flag format: picoCTF{...}</div>
   </a>
 
-  <a href="/mission2" class="mission-card hard">
+  <a href="/mission5" class="mission-card hard">
     <div class="card-header">
-      <span class="badge hard-badge">HARD · 300 PTS</span>
-      <span class="card-category">Crypto / Encoding</span>
+      <span class="badge hard-badge">300 PTS</span>
+      <span class="card-category">Access Control</span>
     </div>
-    <h2 class="card-title">Mission 2</h2>
-    <h3 class="card-name">Layered Transmission</h3>
+    <h2 class="card-title">Challenge 2</h2>
+    <h3 class="card-name">Session Masquerade</h3>
     <p class="card-desc">
-      An intercepted transmission from BlueCore operatives. Multiple layers of
-      obfuscation were applied, and earlier intelligence may be relevant.
+      A case vault trusts a browser-carried role token. Decode, alter, and test
+      whether the server accepts client-side authority.
     </p>
-    <div class="card-tools">Tools: CyberChef, Python</div>
+    <div class="card-tools">Tools: DevTools, CyberChef</div>
     <div class="card-flag-hint">Flag format: picoCTF{...}</div>
   </a>
 
-  <a href="/login" class="mission-card hard">
+  <a href="/mission6" class="mission-card hard">
     <div class="card-header">
-      <span class="badge hard-badge">HARD · 300 PTS</span>
-      <span class="card-category">Web + Network</span>
+      <span class="badge hard-badge">300 PTS</span>
+      <span class="card-category">Command Injection</span>
     </div>
-    <h2 class="card-title">Mission 3</h2>
-    <h3 class="card-name">Digital Turf Breach</h3>
+    <h2 class="card-title">Challenge 3</h2>
+    <h3 class="card-name">Console Breakout</h3>
     <p class="card-desc">
-      The final Atlas Core target. Identify the exposed service on the assigned
-      lab network, investigate the portal, and recover the final operation flag.
+      A network helper blends user input with command syntax. Probe the boundary
+      and read the simulated recovery file.
     </p>
-    <div class="card-tools">Tools: nmap, Burp Suite, Browser</div>
+    <div class="card-tools">Tools: Browser, Burp Suite</div>
     <div class="card-flag-hint">Flag format: picoCTF{...}</div>
   </a>
 
 </div>
 
 <section class="info-section">
-  <h2 class="section-title">Mission Overview</h2>
+  <h2 class="section-title">Challenge Overview</h2>
   <table class="info-table">
     <thead>
-      <tr><th>Mission</th><th>Category</th><th>Points</th><th>Objective</th></tr>
+      <tr><th>Challenge</th><th>Category</th><th>Points</th><th>Objective</th></tr>
     </thead>
     <tbody>
       <tr>
-        <td>Mission 1 — Staff Portal Leak</td>
-        <td>Web Recon</td>
+        <td>Challenge 1 - Ghost Bundle</td>
+        <td>Client Recon</td>
         <td>300</td>
-        <td>Investigate the staff portal and recover the first operation token.</td>
+        <td>Inspect a shipped frontend bundle and recover a leaked token marker.</td>
       </tr>
       <tr>
-        <td>Mission 2 — Layered Transmission</td>
-        <td>Crypto / Encoding</td>
+        <td>Challenge 2 - Session Masquerade</td>
+        <td>Access Control</td>
         <td>300</td>
-        <td>Analyze an intercepted transmission and recover the second operation token.</td>
+        <td>Modify an untrusted browser role token to reach a restricted vault.</td>
       </tr>
       <tr>
-        <td>Mission 3 — Digital Turf Breach</td>
-        <td>Web + Network</td>
+        <td>Challenge 3 - Console Breakout</td>
+        <td>Command Injection</td>
         <td>300</td>
-        <td>Discover the exposed service, breach the portal authentication, and recover the final operation flag.</td>
+        <td>Exploit unsafe diagnostic command construction and recover a recovery token.</td>
       </tr>
     </tbody>
   </table>
@@ -92,12 +92,12 @@
 <section class="info-section">
   <h2 class="section-title">Lab Rules</h2>
   <ul class="rules-list">
-    <li>✅ Attack only the assigned VM / localhost lab environment</li>
-    <li>✅ Use approved tools: nmap, Burp Suite, CyberChef, browser</li>
-    <li>✅ Submit flag + technical write-up for each mission</li>
-    <li>❌ No DoS attacks</li>
-    <li>❌ No attacks outside the lab environment</li>
-    <li>❌ No real malware or destructive payloads</li>
+    <li>Attack only the assigned VM or localhost lab environment</li>
+    <li>Use approved tools: browser DevTools, Burp Suite, CyberChef, Python</li>
+    <li>Submit flag plus technical write-up for each challenge</li>
+    <li>No DoS attacks</li>
+    <li>No attacks outside the lab environment</li>
+    <li>No real malware or destructive payloads</li>
   </ul>
 </section>
 {% endblock %}

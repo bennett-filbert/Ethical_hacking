@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Ghost Bundle - Challenge 1{% endblock %}
+
+{% block content %}
+
+<div class="challenge-banner hard-banner">
+  Challenge 1 - Ghost Bundle
+</div>
+
+<div class="transmission-container">
+  <h2 class="transmission-title">// FRONTEND BUILD INSPECTION</h2>
+  <p class="transmission-sub">
+    Source: Atlas Core frontend bundle &middot; Classification: INTERNAL &middot; Build: 731.4-client
+  </p>
+
+  <div class="payload-box">
+    <div class="payload-label">ACTIVE CLIENT CONFIG</div>
+    <div class="payload-data">/assets/telemetry.js</div>
+    <button class="btn-copy" onclick="copyText('telemetry-path')">Copy</button>
+    <span id="telemetry-path" style="display:none;">/assets/telemetry.js</span>
+  </div>
+
+  <div class="case-note">
+    <span class="note-icon">[!]</span>
+    Analyst note:<br>
+    <em>
+      "Rendered pages tell one story. Bundles, headers, and build metadata tell
+      the rest."
+    </em>
+  </div>
+</div>
+
+<div class="challenge-info">
+  <h2 class="section-title">// Mission Brief</h2>
+
+  <div class="story-block">
+    <p>
+      Atlas Core shipped a frontend bundle during a rushed incident response.
+      The visible page does not expose credentials, but the client bundle may contain
+      old operational metadata.
+    </p>
+
+    <p>
+      Inspect the resources loaded by the page, identify the leaked marker, reverse the
+      lightweight transformation, and recover the first operation token.
+    </p>
+  </div>
+
+  <div class="info-card">
+    <div class="info-row">
+      <span class="info-label">Category</span>
+      <span class="info-value">Web Recon / Client-Side Disclosure</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">Difficulty</span>
+      <span class="hard-text">Hard - 300 pts</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">Objective</span>
+      <span class="info-value">Recover a token leaked through a client-side JavaScript asset.</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">Suggested Tools</span>
+      <span class="info-value">Browser DevTools, curl, CyberChef, Python</span>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/telemetry.js"></script>
+{% endblock %}

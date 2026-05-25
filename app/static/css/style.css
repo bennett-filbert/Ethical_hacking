@@ -778,3 +778,210 @@ ul li { margin-bottom: 4px; }
   .detail-row { flex-direction: column; gap: 4px; }
   .detail-label { width: auto; }
 }
+
+/* Atlas Breach Lab refresh */
+:root {
+  --bg: #08090b;
+  --bg-card: #10131a;
+  --bg-card2: #171c24;
+  --border: #26313d;
+  --border2: #344454;
+  --text: #eef3f6;
+  --text-sub: #a3b2bf;
+  --text-muted: #687887;
+  --green: #45f0a6;
+  --green-dim: #176346;
+  --cyan: #6bd6ff;
+  --red: #ff5b7a;
+  --red-dim: #6f2434;
+  --orange: #ffb14a;
+  --orange-dim: #744615;
+  --yellow: #f5df6d;
+  --purple: #c18cff;
+  --shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
+}
+
+body {
+  background:
+    linear-gradient(180deg, rgba(14, 21, 27, 0.88), rgba(8, 9, 11, 1) 380px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 96px);
+}
+
+.navbar {
+  height: auto;
+  min-height: 64px;
+  background: rgba(7, 9, 12, 0.94);
+  border-bottom: 1px solid #314050;
+  backdrop-filter: blur(12px);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.nav-brand {
+  color: #ffffff;
+  letter-spacing: 0.08em;
+}
+
+.brand-slash { color: var(--orange); }
+.brand-sub { color: var(--cyan); }
+
+.nav-links a {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: #c3d3df;
+}
+
+.nav-links a:hover {
+  background: #17212b;
+  border-color: #344454;
+  color: #ffffff;
+}
+
+.main-content { max-width: 1120px; }
+
+.hero {
+  text-align: left;
+  padding: 54px 0 34px;
+  border-bottom: 1px solid rgba(107, 214, 255, 0.22);
+  margin-bottom: 30px;
+}
+
+.hero-tag {
+  color: var(--orange);
+  margin-bottom: 14px;
+}
+
+.hero-title {
+  font-size: 3.4rem;
+  letter-spacing: 0;
+}
+
+.hero-title .green { color: var(--cyan); }
+
+.hero-sub {
+  margin: 0;
+  max-width: 680px;
+  color: #c8d4de;
+}
+
+.mission-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.mission-card {
+  position: relative;
+  min-height: 270px;
+  background: linear-gradient(180deg, #131923 0%, #0f1218 100%);
+  border: 1px solid #2b3947;
+  box-shadow: var(--shadow);
+}
+
+.mission-card::before {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 4px;
+  background: var(--orange);
+  border-radius: 999px;
+  margin-bottom: 18px;
+}
+
+.mission-card:hover {
+  border-color: var(--cyan);
+  transform: translateY(-4px);
+}
+
+.badge,
+.hard-badge {
+  border-radius: 999px;
+  background: #231a10;
+  color: var(--orange);
+  border: 1px solid var(--orange-dim);
+}
+
+.card-category {
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.card-title {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.card-name {
+  font-size: 1.35rem;
+  color: #ffffff;
+}
+
+.card-tools { color: var(--green); }
+.section-title { color: var(--orange); }
+
+.info-table th {
+  background: #161d27;
+  color: var(--orange);
+}
+
+.info-table th,
+.info-table td,
+.rules-list li {
+  border-color: #283745;
+}
+
+.challenge-banner {
+  background: #141b24;
+  border-color: #33485c;
+  color: var(--orange);
+  text-align: left;
+}
+
+.transmission-container,
+.portal-container,
+.story-block,
+.info-card,
+.logs-container,
+.profile-card {
+  background: linear-gradient(180deg, #121821 0%, #0f1319 100%);
+  border-color: #2d3c4a;
+  box-shadow: var(--shadow);
+}
+
+.transmission-container { border-color: #5b4320; }
+.transmission-title,
+.payload-data { color: var(--orange); }
+
+.payload-box,
+.log-terminal,
+.form-group input {
+  background: #080b0f;
+  border-color: #344454;
+}
+
+.case-note {
+  background: #171f29;
+  border-left-color: var(--cyan);
+}
+
+.portal-icon {
+  color: var(--orange);
+  font-family: var(--mono);
+  font-size: 1.5rem;
+}
+
+.btn-vuln {
+  background: var(--orange);
+  color: #111111;
+}
+
+.btn-login:hover {
+  opacity: 1;
+  filter: brightness(1.08);
+}
+
+@media (max-width: 880px) {
+  .mission-grid { grid-template-columns: 1fr; }
+  .hero-title { font-size: 2.3rem; }
+}

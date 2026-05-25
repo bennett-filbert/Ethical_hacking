@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Vault - Challenge 2{% endblock %}
+
+{% block content %}
+
+<div class="challenge-banner hard-banner">
+  Challenge 2 - Vault Access
+</div>
+
+{% if flag %}
+<div class="flag-banner">
+  {{ flag }}
+</div>
+{% endif %}
+
+<div class="profile-card {% if flag %}admin-profile{% else %}employee-profile{% endif %}">
+  <div class="profile-top">
+    <div class="profile-avatar">V</div>
+    <div>
+      <div class="profile-name">Atlas Case Vault</div>
+      <div class="profile-dept">Role observed from browser token: {{ role }}</div>
+      <span class="profile-badge {% if flag %}badge-admin{% else %}badge-employee{% endif %}">
+        {% if flag %}ADMIN VIEW{% else %}GUEST VIEW{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <div class="profile-details">
+    <div class="detail-row">
+      <span class="detail-label">Token Data</span>
+      <span class="detail-value mono">{{ decoded }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Vault Note</span>
+      <span class="detail-value">
+        {% if flag %}
+          Restricted recovery token released.
+        {% else %}
+          Guest role cannot view restricted recovery material.
+        {% endif %}
+      </span>
+    </div>
+  </div>
+</div>
+
+<a href="/mission5" class="btn-secondary">Return to Challenge 2</a>
+
+{% endblock %}

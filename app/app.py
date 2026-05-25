@@ -28,6 +28,9 @@ LOG_PATH = os.path.join(BASE_DIR, "logs", "access.log")
 # ── Load flags and runtime secrets from environment ───────────────────────────
 _M1_FLAG   = os.environ.get("CTF_M1_FLAG",   "picoCTF{REPLACE_ME_M1}")
 _M2_FLAG   = os.environ.get("CTF_M2_FLAG",   "picoCTF{REPLACE_ME_M2}")
+_M4_FLAG   = os.environ.get("CTF_M4_FLAG",   "picoCTF{REPLACE_ME_M4}")
+_M5_FLAG   = os.environ.get("CTF_M5_FLAG",   "picoCTF{REPLACE_ME_M5}")
+_M6_FLAG   = os.environ.get("CTF_M6_FLAG",   "picoCTF{REPLACE_ME_M6}")
 _CASE_CODE = os.environ.get("CTF_CASE_CODE", "REPLACE_ME")
 
 # ── Mission 1 — split flag into 4 base64 fragments ────────────────────────────
@@ -97,6 +100,13 @@ def get_ip() -> str:
 def sha256(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
+def b64_json(data: str) -> str:
+    return base64.urlsafe_b64encode(data.encode()).decode().rstrip("=")
+
+def unb64_json(data: str) -> str:
+    padded = data + "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(padded.encode()).decode()
+
 # ── Rate limiter (in-memory, for secure-login demo) ───────────────────────────
 _attempts: dict[str, list[float]] = defaultdict(list)
 _WINDOW = 60
@@ -150,6 +160,21 @@ def serve_css():
     resp = make_response(comment + css)
     resp.headers["Content-Type"] = "text/css"
     return resp
+
+
+@app.route("/assets/telemetry.js")
+def telemetry_js():
+    marker = base64.b64encode(_M4_FLAG.encode()).decode()[::-1]
+    content = (
+        "window.ATLAS_TELEMETRY = {\n"
+        "  endpoint: '/mission4/telemetry',\n"
+        "  build: '731.4-client',\n"
+        "  debug: false,\n"
+        f"  retiredTokenMarker: '{marker}'\n"
+        "};\n"
+        "// retiredTokenMarker was reversed before shipping the debug bundle.\n"
+    )
+    return Response(content, mimetype="application/javascript")
 
 
 # ── Archive directory — exposed deployment artifact zone ─────────────────────
@@ -234,28 +259,95 @@ def archive_checksum_manifest():
 
 @app.route("/mission1")
 def mission1():
-    resp = make_response(render_template("mission1.html"))
-    resp.headers["X-Atlas-Audit"] = f"fragment-c={FRAG_C}"
-    resp.set_cookie("audit_hint", FRAG_D, samesite="Lax", httponly=False)
-    return resp
+    return redirect(url_for("index"))
 
 
 # ── Mission 2 — Layered Transmission ─────────────────────────────────────────
 
 @app.route("/mission2")
 def mission2():
+    return redirect(url_for("index"))
+
+
+@app.route("/mission4")
+def mission4():
+    resp = make_response(render_template("mission4.html"))
+    resp.headers["X-Client-Build"] = "telemetry-bundle=/assets/telemetry.js"
+    return resp
+
+
+@app.route("/mission5")
+def mission5():
+    guest_token = b64_json('{"user":"case-viewer","role":"guest","scope":"read"}')
+    resp = make_response(render_template("mission5.html"))
+    resp.set_cookie("atlas_role", guest_token, samesite="Lax", httponly=False)
+    return resp
+
+
+@app.route("/mission5/vault")
+def mission5_vault():
+    token = request.cookies.get("atlas_role", "")
+    role = "unknown"
+    decoded = ""
+    try:
+        decoded = unb64_json(token)
+        role_match = re.search(r'"role"\s*:\s*"([^"]+)"', decoded)
+        if role_match:
+            role = role_match.group(1)
+    except Exception:
+        decoded = "Invalid role token."
+
+    logger.info(f"[INFO]    Vault access attempt  role={role}  ip={get_ip()}")
     return render_template(
-        "mission2.html",
-        decoy_a=DECOY_A,
-        payload=MISSION2_PAYLOAD,
-        decoy_c=DECOY_C,
+        "mission5_vault.html",
+        role=role,
+        decoded=decoded,
+        flag=_M5_FLAG if role == "admin" else None,
     )
+
+
+@app.route("/mission6", methods=["GET", "POST"])
+def mission6():
+    output = None
+    target = ""
+
+    if request.method == "POST":
+        target = request.form.get("target", "").strip()
+        ip = get_ip()
+        logger.info(f"[INFO]    Diagnostic lookup  target={target!r}  ip={ip}")
+
+        if any(token in target for token in [";", "&&", "|"]):
+            logger.warning(
+                f"[WARNING] Command injection pattern detected  target={target!r}  ip={ip}"
+            )
+
+        output_lines = [
+            f"$ ping -c 1 {target}",
+            f"PING {target or 'localhost'}: 56 data bytes",
+            "64 bytes from 10.73.1.20: icmp_seq=0 ttl=63 time=4.2 ms",
+        ]
+        lowered = target.lower()
+        if "cat" in lowered and "flag" in lowered:
+            output_lines.extend([
+                "$ cat /opt/atlas/recovery/flag.txt",
+                _M6_FLAG,
+            ])
+        elif ";" in target or "&&" in target or "|" in target:
+            output_lines.extend([
+                "sh: command executed in diagnostic context",
+                "hint: sensitive recovery files live under /opt/atlas/recovery/",
+            ])
+        output = "\n".join(output_lines)
+
+    return render_template("mission6.html", output=output, target=target)
 
 
 # ── Mission 3 — VULNERABLE login ─────────────────────────────────────────────
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    return redirect(url_for("index"))
+
     error = None
     debug_query = None
 

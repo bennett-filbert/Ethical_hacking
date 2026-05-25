@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Console Breakout - Challenge 3{% endblock %}
+
+{% block content %}
+
+<div class="challenge-banner hard-banner">
+  Challenge 3 - Console Breakout
+</div>
+
+<div class="portal-container">
+  <div class="portal-logo">
+    <div class="portal-icon">[NET]</div>
+    <h1 class="portal-title">OPS DIAGNOSTICS</h1>
+    <p class="portal-sub">Network Health Lookup</p>
+  </div>
+
+  <form class="login-form" method="post" action="/mission6">
+    <div class="form-group">
+      <label for="target">Host or IP</label>
+      <input
+        type="text"
+        id="target"
+        name="target"
+        value="{{ target }}"
+        placeholder="127.0.0.1"
+        autocomplete="off"
+      />
+    </div>
+
+    <button type="submit" class="btn-login btn-vuln">RUN LOOKUP</button>
+  </form>
+</div>
+
+{% if output %}
+<div class="logs-container">
+  <h2 class="section-title">// Diagnostic Output</h2>
+  <pre class="log-terminal">{{ output }}</pre>
+</div>
+{% endif %}
+
+<div class="challenge-info">
+  <h2 class="section-title">// Mission Brief</h2>
+
+  <div class="story-block">
+    <p>
+      Atlas Core exposed an internal network diagnostic helper for support staff.
+      The helper accepts a host value and passes it into an operating-system command
+      without separating user input from command syntax.
+    </p>
+
+    <p>
+      Test the input boundary, discover whether additional commands can run in the
+      diagnostic context, and recover the third operation token from the simulated
+      recovery file.
+    </p>
+  </div>
+
+  <div class="info-card">
+    <div class="info-row">
+      <span class="info-label">Category</span>
+      <span class="info-value">Web / Command Injection</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">Difficulty</span>
+      <span class="hard-text">Hard - 300 pts</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">Objective</span>
+      <span class="info-value">Exploit unsafe command construction in a diagnostic form.</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">Suggested Tools</span>
+      <span class="info-value">Browser, Burp Suite, terminal basics</span>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

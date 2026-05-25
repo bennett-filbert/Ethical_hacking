@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Session Masquerade - Challenge 2{% endblock %}
+
+{% block content %}
+
+<div class="challenge-banner hard-banner">
+  Challenge 2 - Session Masquerade
+</div>
+
+<div class="portal-container">
+  <div class="portal-logo">
+    <div class="portal-icon">[ID]</div>
+    <h1 class="portal-title">ATLAS VAULT</h1>
+    <p class="portal-sub">Temporary Case Archive Access</p>
+  </div>
+
+  <p class="portal-note">
+    A temporary role token has been issued for your browser session.
+    Proceed to the vault and verify whether access controls are enforced server-side.
+  </p>
+
+  <a href="/mission5/vault" class="btn-login btn-vuln" style="display:block;text-align:center;text-decoration:none;">
+    OPEN VAULT
+  </a>
+</div>
+
+<div class="challenge-info">
+  <h2 class="section-title">// Mission Brief</h2>
+
+  <div class="story-block">
+    <p>
+      Atlas Core introduced a lightweight role token during a case archive migration.
+      The token is stored in the browser and the vault trusts its contents when deciding
+      whether to reveal restricted material.
+    </p>
+
+    <p>
+      Inspect the issued token, understand its structure, alter the role claim, and use
+      the modified token to recover the second operation token.
+    </p>
+  </div>
+
+  <div class="info-card">
+    <div class="info-row">
+      <span class="info-label">Category</span>
+      <span class="info-value">Web / Broken Access Control</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">Difficulty</span>
+      <span class="hard-text">Hard - 300 pts</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">Objective</span>
+      <span class="info-value">Bypass a trusted client-side role token and access the restricted vault.</span>
+    </div>
+
+    <div class="info-row">
+      <span class="info-label">Suggested Tools</span>
+      <span class="info-value">Browser DevTools, CyberChef, Python</span>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
