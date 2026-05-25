@@ -38,11 +38,28 @@ http://localhost:5000
 
 ## Docker
 
-You can also run the lab with Docker:
+You can also run the lab with Docker. First create `.env` in the project folder:
+
+```bash
+copy .env.example .env
+```
+
+Edit `.env` so it contains values for the three active challenges:
+
+```env
+CTF_M4_FLAG=picoCTF{ghost_bundle_leaks_tokens}
+CTF_M5_FLAG=picoCTF{client_side_roles_are_not_auth}
+CTF_M6_FLAG=picoCTF{diagnostic_console_command_breakout}
+CTF_MASTER_SEED=atlas-breach-lab-seed-2026
+```
+
+Then start Docker:
 
 ```bash
 docker compose up --build
 ```
+
+If Docker says the env file is missing, confirm you are inside the folder that contains `docker-compose.yml`, `Dockerfile`, `.env.example`, `README.md`, and `app/`.
 
 ## Active Routes
 
