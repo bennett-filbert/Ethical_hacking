@@ -55,23 +55,25 @@ Show that every rubric requirement is satisfied. Point out that the project is n
 ```
 Red Team Machine
       |
-      | nmap / browser / Python / CyberChef / Burp Suite
+      | nmap / browser / Python / CyberChef / Burp Suite / curl
       v
 Assigned Ethical VM (or Docker on laptop)
       |
       | Flask Web App — Port 5000
       v
-SQLite Database
+SQLite Database + Runtime Secrets (.env)
       |
-      +── Vulnerable routes: /login, /profile
-      +── Secure routes: /secure-login, /secure-profile
-      +── Logs: /logs-demo → access.log
-      +── Static artifacts: /static/archive/staff_audit_731.txt
+      +── Discovery:  /robots.txt, /archive/ (deployment artifacts)
+      +── Mission 1:  /mission1 (header/cookie), /assets/style.css (CSS comment)
+      +── Mission 2:  /mission2 (3 transmissions — one real)
+      +── Mission 3:  /login (SQLi), /profile (IDOR), /case (broken access control)
+      +── Blue Team:  /secure-login, /secure-profile, /logs-demo
+      +── Flags:      read from .env at runtime — not in committed source
 ```
 
 **Deployment options:**
-- Local: `python app/app.py`
-- Docker: `docker compose up --build`
+- Local: `copy .env.example .env` → edit values → `python app/app.py`
+- Docker: `copy .env.example .env` → edit values → `docker compose up --build`
 - Shared on demo day: ngrok exposes port 5000 (browser/Burp only — not nmap)
 
 **Speaking note:**  
@@ -84,28 +86,34 @@ Explain that Docker gives any machine a consistent, one-command environment. The
 **Fields:**
 - Difficulty: Hard — 300 pts
 - Category: Web Recon / Information Disclosure
-- Concepts: HTML comment inspection, deployment artifact exposure, Base64 decoding
-- Technique: View Page Source → follow hidden path → decode Base64 token
+- Concepts: robots.txt recon, deployment artifact exposure, metadata leakage across 4 channels, Base64 fragment reconstruction
+- Technique: robots.txt → /archive/ → Fragment A + ATLAS keyword → CSS comment → response header → cookie → concatenate fragments → flag
 - OWASP: A05:2021 — Security Misconfiguration, A02:2021 — Cryptographic Failures
 
 **Attack flow:**
 ```
-1. View Page Source (Ctrl+U)
-      ↓ finds HTML comment with path
-2. Navigate to /static/archive/staff_audit_731.txt
-      ↓ browser downloads plaintext audit log
-3. Read file → find Base64 maintenance token + "Project keyword: ATLAS"
+1. Check /robots.txt
+      ↓ Disallow: /archive/
+2. Access /archive/ — see directory listing of 4 files
+      ↓ (decoys: staff_audit_old.txt, backup_notes.txt, checksum_manifest.txt)
+3. Read /archive/staff_audit_731.txt
+      ↓ Fragment A (base64) + "Project keyword: ATLAS" + "Audit Reference: BATCH-731"
+4. Inspect /assets/style.css in DevTools
+      ↓ /* deployment-fragment-b: <base64> */ → Fragment B
+5. Inspect /mission1 response headers (Network tab / curl -I)
+      ↓ X-Atlas-Audit: fragment-c=<base64> → Fragment C
+6. Inspect /mission1 cookies (Application tab / curl -c)
+      ↓ audit_hint=<base64> → Fragment D
+7. base64_decode(A) + base64_decode(B) + base64_decode(C) + base64_decode(D)
       ↓
-4. Decode token with Python or CyberChef
-      ↓
-5. FLAG: picoCTF{deployment_artifacts_leak_secrets}
-6. Note: "ATLAS" → save for Mission 2
+8. FLAG: picoCTF{deployment_artifacts_leak_secrets}
+9. Save: ATLAS, BATCH-731 → needed for Mission 2 key derivation
 ```
 
 **Why this is Hard:**  
-The flag is not directly in the HTML source — there are two steps. The player must first find the comment, then navigate to an unlisted file, then decode the token. They also need to recognize that the archive file contains intelligence for the next mission. This requires careful reading, not just a search-and-find.
+The flag is split across 4 different channels (file, CSS, header, cookie). Players who only check the HTML source find nothing. Players who check only the archive find 1 fragment — insufficient. Decoy files add misdirection. Full discovery requires systematic enumeration of all response channels and understanding that robots.txt is a hint, not access control.
 
-**Screenshot to show:** Page source with the HTML comment visible. Browser showing the archive file content. Python terminal or CyberChef decoding the token to the flag.
+**Screenshot to show:** robots.txt showing Disallow. Archive listing. Archive file with Fragment A. DevTools Sources showing CSS comment. DevTools Network showing X-Atlas-Audit header. DevTools Application showing audit_hint cookie. Python/CyberChef showing reconstruction to flag.
 
 ---
 
@@ -114,37 +122,48 @@ The flag is not directly in the HTML source — there are two steps. The player 
 **Fields:**
 - Difficulty: Hard — 300 pts
 - Category: Crypto / Encoding
-- Concepts: XOR cipher, repeating key, cross-mission intelligence dependency
-- Technique: Base64 decode → reverse → hex decode → XOR with ATLAS key
-- OWASP: A02:2021 — Cryptographic Failures
+- Concepts: derived key from cross-mission metadata, custom encoding chain with byte transposition, decoy transmissions
+- Technique: identify authentic transmission → derive key from Mission 1 intel → reverse 5-step chain
+- OWASP: A02:2021 — Cryptographic Failures, A05:2021 — Security Misconfiguration
 
 **Cross-mission dependency:**  
-The key `ATLAS` is found in the Mission 1 archive file (`Project keyword: ATLAS`). Without completing Mission 1 carefully, this mission cannot be solved.
+The key is derived from two pieces of intelligence found in Mission 1:
+- `Project keyword: ATLAS` from `/archive/staff_audit_731.txt`
+- `Audit Reference: BATCH-731` from the same file
+- Key derivation: `SHA256("ATLAS:BATCH-731")[:8]`
+
+**Three transmissions (only 731-B is the flag):**
+```
+731-A: simple base64 → decodes to ops text containing Mission 3 case code a7f3b2c1
+731-B: complex chain → decodes to picoCTF{weak_custom_crypto_fails}  ← REAL
+731-C: simple base64 → decodes to plausible ops text, no flag
+```
 
 **Encoding chain (Blue Team design — forward):**
 ```
-Flag
-→ XOR with repeating key ATLAS
+Flag bytes
+→ XOR each byte with repeating 8-byte SHA256-derived key
+→ Separate even-indexed and odd-indexed bytes; concatenate even + odd
 → Hex encode
 → Reverse hex string
 → Base64 encode
-→ Payload displayed on page
+→ Transmission 731-B displayed on page
 ```
 
 **Decoding chain (Red Team — reverse):**
 ```
-Payload
-→ Base64 decode
+Base64 decode
 → Reverse string
-→ Hex decode
-→ XOR bytes with key ATLAS
+→ Hex decode to bytes
+→ Undo even/odd transposition (split halves, interleave)
+→ XOR with SHA256("ATLAS:BATCH-731")[:8]
 → FLAG: picoCTF{weak_custom_crypto_fails}
 ```
 
 **Why this is Hard:**  
-Four encoding steps must be identified and reversed in the correct order. The key must be sourced from Mission 1 intelligence — it is not given on the page. Players who did not carefully document Mission 1's findings must go back. This models real attacker behavior: intelligence gathered earlier directly enables later exploitation.
+5 encoding steps. Key requires cross-mission intel AND knowing the format "ATLAS:BATCH-731" + SHA256. Three transmissions shown — players must identify which is real (the harder-encoded one). 731-A looks solved easily but gives operational intel for Mission 3, rewarding thorough players.
 
-**Screenshot to show:** CyberChef or Python terminal showing the four decode steps and the final flag. Notes from Mission 1 archive showing `Project keyword: ATLAS`.
+**Screenshot to show:** /mission2 showing 3 transmissions. Decoded 731-A text containing case code. Python solver decoding 731-B step by step to the flag. Mission 1 archive notes showing ATLAS and BATCH-731.
 
 ---
 
@@ -153,21 +172,22 @@ Four encoding steps must be identified and reversed in the correct order. The ke
 **Fields:**
 - Difficulty: Hard — 300 pts
 - Category: Web + Network + Database + Blue Team Defense
-- Concepts: Network scanning, SQL Injection, IDOR / Broken Access Control
-- Tools: nmap, browser, Burp Suite
+- Concepts: Network scanning, SQL Injection, IDOR, Broken Object-Level Access Control on secondary resource
+- Tools: nmap, browser, Burp Suite, DevTools
 - OWASP: A01, A03, A07, A09
 
 **Attack flow summary:**
 1. nmap discovers Flask on port 5000
 2. Login page notice reveals username `maya`
-3. SQL injection `maya' --` bypasses authentication
-4. IDOR: change `/profile?id=102` to `/profile?id=1` to access admin
-5. Flag captured from admin's notes field
+3. SQL injection `maya' --` bypasses authentication → lands on `/profile?id=102`
+4. IDOR: change to `/profile?id=1` → admin profile shows "case AC-731, verification code required"
+5. Decode Transmission 731-A from Mission 2 → find verification token `a7f3b2c1`
+6. Access `/case?id=AC-731&code=a7f3b2c1` → flag revealed from case record
 
 **Why this is Hard:**  
-This mission chains three techniques: network reconnaissance, SQL injection, and IDOR. The student must first find the service, then break authentication using a targeted (not generic) payload, then recognize and exploit a second vulnerability in the profile endpoint. Each step teaches a distinct real-world attack.
+Four techniques chained: network recon, SQLi, IDOR, and broken access control on a secondary resource. The final flag is NOT in the admin profile — players must find the case endpoint, recognize that the route only checks a code (not authorization), and use a code discovered from Mission 2 output. All three missions are interconnected.
 
-**Screenshots to show:** nmap output, login page with `maya' --` payload entered, Maya's profile (no flag), URL changed to `?id=1`, admin profile with flag, log entries at `/logs-demo`.
+**Screenshots to show:** nmap output, login with `maya' --`, Maya's profile (no flag), admin profile with case reference, case denied page (no code), case record with flag, log entries at `/logs-demo`.
 
 ---
 
@@ -197,24 +217,30 @@ The secure version is not a different application — it is the same scenario wi
 
 ```
 1. nmap -sV <target-ip>
-      ↓ discovers port 5000 / Flask
+      ↓ discovers port 5000 / Flask / Werkzeug
 2. Open /login in browser
-      ↓ read notice: username = maya
+      ↓ read maintenance notice: username = maya, batch 102
 3. Enter SQL injection payload: maya' --
-      ↓ authentication bypassed as Maya (id=102)
-4. Observe /profile?id=102 — employee profile, no flag
-      ↓
+      ↓ password check commented out → auth bypassed as Maya (id=102)
+4. Observe /profile?id=102 — Maya's employee profile, no flag
+      ↓ notice ?id= parameter in URL
 5. Change URL to /profile?id=1 — IDOR: admin profile returned
+      ↓ WARNING logged: Profile IDOR
+      ↓ Notes field: "Recovery note archived under case AC-731. Verification code required."
+6. Cross-reference Mission 2: decode Transmission 731-A (simple base64)
+      ↓ plaintext contains: "Case AC-731 verification token: a7f3b2c1"
+7. Access /case?id=AC-731 → denied (no code)
       ↓
-6. Read flag from admin Notes field
+8. Access /case?id=AC-731&code=a7f3b2c1
+      ↓ WARNING logged: Case record accessed
+      ↓ Recovery Note field reveals flag
+9. FLAG: picoCTF{digital_turf_war_compromised}
       ↓
-7. Document all steps + screenshots
-      ↓
-8. Submit flag + write-up + mitigation suggestion
+10. Document all steps + screenshots → submit flag + write-up + mitigation
 ```
 
 **Speaking note:**  
-Walk through each step during the demo. Show the nmap scan result. Show the login form with the targeted payload. Show Maya's profile to demonstrate why IDOR is still needed. Show the URL change and the admin profile. If time allows, show `/logs-demo` so the class can see how the attack was recorded.
+Walk through each step during the demo. Emphasize the chain: SQLi bypasses auth → IDOR accesses admin data → admin data references the case → case code found in Mission 2 output → broken access control on /case reveals the flag. Show `/logs-demo` at the end so the class sees the full WARNING trail from SQLi through IDOR to case access.
 
 ---
 
@@ -273,22 +299,28 @@ Every technical element of this project maps directly to what was taught in clas
 
 - [ ] **Home page** — mission dashboard showing all three mission cards at `http://<target>:5000`
 - [ ] **Mission 1** — mission page rendered in the browser (flag is NOT visible)
-- [ ] **Mission 1** — View Page Source with the HTML comment pointing to the archive path highlighted
-- [ ] **Mission 1** — browser tab showing the archive file at `/static/archive/staff_audit_731.txt` with the Base64 token and ATLAS keyword visible
-- [ ] **Mission 1** — Python terminal or CyberChef showing the Base64 decoded flag
-- [ ] **Mission 2** — the encoded payload displayed on the challenge page
-- [ ] **Mission 2** — Python terminal or CyberChef showing all four decode steps (Base64 → reverse → hex → XOR) and the final flag
-- [ ] **Mission 2** — Mission 1 archive note showing `Project keyword: ATLAS` (evidence of cross-mission intelligence)
+- [ ] **Mission 1** — `/robots.txt` showing `Disallow: /archive/`
+- [ ] **Mission 1** — `/archive/` directory listing showing the four files
+- [ ] **Mission 1** — `/archive/staff_audit_731.txt` with Fragment A, `Project keyword: ATLAS`, and `Audit Reference: BATCH-731` visible
+- [ ] **Mission 1** — DevTools Sources tab showing `/assets/style.css` with the `deployment-fragment-b:` comment
+- [ ] **Mission 1** — DevTools Network tab showing `/mission1` response with `X-Atlas-Audit` header
+- [ ] **Mission 1** — DevTools Application tab showing `audit_hint` cookie value
+- [ ] **Mission 1** — Python or CyberChef showing fragment concatenation and the final flag
+- [ ] **Mission 2** — `/mission2` showing all three transmissions (731-A, 731-B, 731-C)
+- [ ] **Mission 2** — decoded Transmission 731-A plaintext (containing the Mission 3 case code)
+- [ ] **Mission 2** — Python terminal showing the 5-step decode chain for 731-B and the final flag
 - [ ] **Mission 3** — `nmap -sV <vm-ip>` output showing port 5000 open (VM/LAN deployment only)
 - [ ] **Mission 3** — login page with the SQL injection payload `maya' --` entered in the username field
 - [ ] **Mission 3** — Maya's employee profile at `/profile?id=102` (no flag — shows why IDOR is needed)
-- [ ] **Mission 3** — URL bar changed to `/profile?id=1` and admin profile page with flag visible
+- [ ] **Mission 3** — Admin profile at `/profile?id=1` with case AC-731 reference in Notes (no flag yet)
+- [ ] **Mission 3** — `/case?id=AC-731` access denied page (no code provided)
+- [ ] **Mission 3** — `/case?id=AC-731&code=a7f3b2c1` showing the case record with the flag
 - [ ] **Mission 3** — secure login page with the same SQLi payload rejected and generic error shown
 - [ ] **Mission 3** — secure profile returning the 403 blocked page when `?id=1` is attempted
-- [ ] **Logs demo** — `/logs-demo` showing INFO and WARNING entries from the full attack session
+- [ ] **Logs demo** — `/logs-demo` showing INFO and WARNING entries from the full attack session (SQLi, IDOR, case access)
 
 **Speaking note:**  
-Screenshots are evidence. Each one should show a specific step clearly. For Mission 1, the archive file screenshot is especially important — it should show both the Base64 token and the `Project keyword: ATLAS` line, demonstrating that cross-mission intelligence was retrieved. Use Burp Suite's HTTP history to show the raw POST request with the Mission 3 payload if available.
+Screenshots are evidence of every step. For Mission 1, show all 4 channels — robots.txt, archive, CSS, header, cookie — to demonstrate that the flag was not visible in any single place. For Mission 2, show the decoded 731-A to prove the cross-mission intel flow. For Mission 3, show the case denied → case accepted sequence to demonstrate both the broken access control vulnerability and the cross-mission dependency on Mission 2 output.
 
 ---
 
@@ -314,17 +346,19 @@ Ethical hacking requires written authorization and a defined scope. Our scope is
 
 **Key takeaways:**
 
-- Three Hard real vulnerabilities demonstrated on a real backend system
-- Not static HTML — Flask + SQLite + Docker Compose
-- Cross-mission intelligence chain: Mission 1 artifact provides the key for Mission 2
+- Three Hard real vulnerabilities chained across three missions
+- Not static HTML — Flask + SQLite + Docker Compose + runtime secrets
+- Flags live only in `.env` (gitignored) — not in the public repository; players must interact with the running app
+- Full cross-mission chain: Mission 1 → key for Mission 2 → case code for Mission 3
+- Four attack channels in Mission 1 (file, CSS, header, cookie) — no single source reveals the flag
 - Both the attack path and the defensive fix are shown side by side
-- Logging captures what a real attacker's activity looks like
-- The project covers six OWASP Top 10 categories
+- Logging captures the complete attacker trail: SQLi → IDOR → case access
+- Covers six OWASP Top 10 categories
 - All 3 missions are Hard (300 pts each) — 900 pts total
-- Designed to satisfy every rubric requirement while teaching real skills
+- AI-resistant by design: no flag is recoverable from static source code alone
 
 **Closing line:**  
-Operation Digital Turf War demonstrates that real attacks do not happen in a single step — they chain information across vulnerabilities. Understanding how one misconfiguration enables another is the most important lesson in this lab, and it is the mindset of every effective security engineer.
+Operation Digital Turf War demonstrates that real attacks do not happen in a single step — they chain information across vulnerabilities and require live interaction with a running system. Understanding how one misconfiguration enables another is the most important lesson in this lab, and it is the mindset of every effective security engineer.
 
 ---
 
@@ -336,7 +370,7 @@ Operation Digital Turf War demonstrates that real attacks do not happen in a sin
 > - The running URL (`http://<vm-ip>:5000` or the ngrok URL)
 > - `PLAYER_GUIDE.md`
 >
-> The source code contains flag locations, vulnerability implementations, credential data, and the archive artifact path. Sharing it before play ends is equivalent to handing out the answer key.
+> The flags are not directly recoverable from the committed public repository alone; players must interact with the running app and collect runtime artifacts. Even so, the source reveals vulnerability logic, route structure, and the encoding scheme — sharing it before play ends gives away the full solution chain.
 >
 > Share the repository only after all flags have been submitted and the lab session is closed.
 
@@ -344,12 +378,27 @@ Operation Digital Turf War demonstrates that real attacks do not happen in a sin
 
 ## Demo Order (Suggested)
 
-1. Open home page — show mission cards
-2. Mission 1 — Ctrl+U on the mission page → find HTML comment → navigate to archive file → decode Base64 token live
-3. Mission 2 — show payload, note ATLAS key from Mission 1, run Python solver live (all 4 steps)
-4. Mission 3 — run nmap, enter `maya' --` SQLi payload, show Maya's profile (no flag), change URL to IDOR, show admin profile + flag
-5. Secure login — show the same payload failing
+1. Open home page — show three mission cards (all Hard, 300 pts each)
+2. Mission 1:
+   - Open /robots.txt → show Disallow: /archive/
+   - Browse /archive/ → show directory listing with decoy files
+   - Open /archive/staff_audit_731.txt → Fragment A + ATLAS + BATCH-731
+   - DevTools Sources → /assets/style.css → show CSS comment with Fragment B
+   - DevTools Network → /mission1 → show X-Atlas-Audit header (Fragment C)
+   - DevTools Application → show audit_hint cookie (Fragment D)
+   - Python: decode and concatenate A+B+C+D → flag
+3. Mission 2:
+   - Open /mission2 → show 3 transmissions
+   - Decode 731-A (base64) live → show "Case AC-731 verification token: a7f3b2c1"
+   - Python solver: derive key from ATLAS:BATCH-731 → reverse chain → 731-B flag
+4. Mission 3:
+   - Run nmap, show port 5000
+   - Enter `maya' --` → log in as Maya → /profile?id=102 (no flag)
+   - Change to /profile?id=1 → admin profile → case AC-731 reference
+   - /case?id=AC-731 → access denied
+   - /case?id=AC-731&code=a7f3b2c1 → flag revealed
+5. Secure login — show same SQLi payload failing
 6. Secure profile — show 403 blocked page
-7. Logs demo — show WARNING entries from the attack session
+7. Logs demo — show full WARNING trail: SQLi → IDOR → case access
 
-Total demo time: approximately 10–15 minutes depending on live speed.
+Total demo time: approximately 15–20 minutes depending on live speed.

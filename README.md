@@ -7,7 +7,9 @@ A three-stage Capture-the-Flag cybersecurity lab for an Ethical Hacking / EMI un
 > All attacks must be performed exclusively within the authorized lab environment.  
 > Do not attempt to attack external systems.
 
-> **For Blue Team / Instructors:** Do not share the source code or this repository with Red Team players before the lab session ends. Give players only the running URL and `PLAYER_GUIDE.md`. Source code reveals flag locations and vulnerability details. Share the repository only after all flags have been submitted.
+> **For Blue Team / Instructors:** Do not share the source code or this repository with Red Team players before the lab session ends. Give players only the running URL and `PLAYER_GUIDE.md`.
+> The flags are not directly recoverable from the committed public repository alone; players must interact with the running app and collect runtime artifacts. Flags live only in `.env` (gitignored) and in the running application's memory — not in the committed source.
+> Share the repository only after all flags have been submitted.
 
 ---
 
@@ -23,9 +25,9 @@ The Red Team begins with access to a suspicious internal portal. They find evide
 
 | Mission | Difficulty | Points | Category | Concept |
 |---------|-----------|--------|----------|---------|
-| Mission 1 — Hard Web Recon | Hard | 300 | Web Recon / Info Disclosure | Deployment artifact exposure, Base64 decoding |
-| Mission 2 — Hard Crypto/Encoding | Hard | 300 | Crypto / Encoding | Custom XOR scheme with cross-mission key |
-| Mission 3 — Digital Turf Breach | Hard | 300 | Web + Network | Authentication bypass and access control |
+| Mission 1 — Hard Web Recon | Hard | 300 | Web Recon / Info Disclosure | Multi-source deployment artifact exposure, metadata leakage across 4 channels |
+| Mission 2 — Hard Crypto/Encoding | Hard | 300 | Crypto / Encoding | Custom encoding chain with derived cross-mission key; 3 transmissions (one real) |
+| Mission 3 — Digital Turf Breach | Hard | 300 | Web + Network | SQLi → IDOR → case record broken access control; code sourced from Mission 2 |
 | **Total** | | **900** | | |
 
 Each mission has a flag in the format `picoCTF{...}`. Flags are discovered by exploiting the challenge — they are not provided here.
@@ -61,9 +63,13 @@ Each mission has a flag in the format `picoCTF{...}`. Flags are discovered by ex
 git clone <repo-url>
 cd ethical-hacking-proj
 
+# 1. Create your local .env from the template and fill in the real values
+copy .env.example .env          # Windows
+# cp .env.example .env          # macOS / Linux
+# (edit .env — replace every REPLACE_ME with the actual flag/seed values)
+
 pip install -r requirements.txt
-python app/init_db.py
-python app/app.py
+python app/app.py               # initializes the database automatically on first run
 ```
 
 Open: `http://localhost:5000`
@@ -75,6 +81,11 @@ Open: `http://localhost:5000`
 ```bash
 git clone <repo-url>
 cd ethical-hacking-proj
+
+# 1. Create your local .env from the template and fill in the real values
+copy .env.example .env          # Windows
+# cp .env.example .env          # macOS / Linux
+# (edit .env — replace every REPLACE_ME with the actual flag/seed values)
 
 docker compose up --build
 ```
@@ -128,10 +139,14 @@ ngrok will print a public URL such as `https://abc123.ngrok-free.app`. Share thi
 | Route | Description |
 |-------|-------------|
 | `/` | Mission dashboard |
-| `/mission1` | Hard — Web Recon |
-| `/mission2` | Hard — Crypto/Encoding |
+| `/mission1` | Hard — Web Recon (also sets fragment header/cookie) |
+| `/mission2` | Hard — Crypto/Encoding (three transmissions) |
 | `/login` | Hard — Vulnerable login page |
-| `/profile` | Hard — Employee profile page |
+| `/profile` | Hard — Employee profile page (IDOR) |
+| `/case` | Hard — Internal case record (broken access control) |
+| `/robots.txt` | Standard crawler hints (Mission 1 discovery path) |
+| `/archive/` | Exposed deployment artifact directory (Mission 1) |
+| `/assets/style.css` | Dynamic CSS (contains Mission 1 fragment B) |
 | `/secure-login` | Blue Team — Secure login comparison |
 | `/secure-profile` | Blue Team — Secure profile comparison |
 | `/logs-demo` | Blue Team — Security logging demonstration |

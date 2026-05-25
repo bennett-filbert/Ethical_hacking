@@ -61,11 +61,11 @@ All three missions are Hard difficulty. Each requires multiple steps and careful
 **Category:** Web Recon / Information Disclosure  
 **URL:** `/mission1`
 
-A corporate staff portal. The rendered page looks standard. Your goal is to go beyond what is displayed on screen and investigate what the server actually sent to your browser.
+A corporate staff portal. The rendered page is not the whole picture.
 
-Think about what information might be present in the page that the browser does not visibly show. Then think about whether the server is exposing anything beyond the page itself.
+Deployment leftovers can appear across multiple channels — not just the visible HTML. Think about everything the server sends in a full response, what standard web conventions reveal about an application's structure, and where developers tend to leave metadata behind.
 
-Read everything carefully. Some information you find may be relevant later.
+Collect everything carefully. Intelligence gathered here is directly relevant to later missions.
 
 ---
 
@@ -75,9 +75,11 @@ Read everything carefully. Some information you find may be relevant later.
 **Category:** Crypto / Encoding  
 **URL:** `/mission2`
 
-An intercepted transmission that has been processed through multiple encoding steps. The page displays the result. Your goal is to identify each transformation and reverse every step in the correct order.
+Several transmissions were intercepted from the BlueCore network. The page shows all of them — but not all are authentic.
 
-There is a key involved. If you have been thorough in Mission 1, you already have it.
+Your goal is to identify the authentic transmission, reverse every encoding step in the correct order, and extract the flag. A key is required. The key is not provided on this page — earlier intelligence from Mission 1 is necessary.
+
+Decoding one of the transmissions may also reveal operational data relevant to Mission 3.
 
 **Recommended tools:** CyberChef (free, browser-based), Python 3 standard library
 
@@ -105,7 +107,10 @@ Identify what service is running and on which port.
 Access the login page and read everything on it. Test it for vulnerabilities. Think about how web login forms communicate with databases. What happens if the input is not properly validated?
 
 **Phase 3 — Access Control**  
-After logging in, observe the URL carefully. Think about whether the application verifies that you are authorized to view the data it returns.
+After logging in, observe the URL carefully. Think about whether the application verifies that you are authorized to view the data it returns. The profile you land on may not be the only profile in the system.
+
+**Phase 4 — Internal Records**  
+The administrator profile will reference an internal record system. Finding the flag requires navigating that system. A verification code is required — if you have worked through Mission 2 carefully, you already have it.
 
 **Recommended tools:** nmap, browser, Burp Suite, DevTools
 
@@ -156,9 +161,9 @@ Using the template in `writeups/red_team_writeup.md`, fill in:
 ### Screenshots
 Capture screenshots of each key step. At minimum:
 
-**Mission 1:** Page source showing what led you to the artifact, the artifact file content, and the decoded flag output  
-**Mission 2:** The encoded payload, your decode process, and the final flag  
-**Mission 3:** nmap result, login attempt, the profile page at the initial URL, the profile page after your URL change, and the log page showing your activity
+**Mission 1:** Evidence for each channel you investigated, the artifact content from each source, and the final decoded flag  
+**Mission 2:** The three transmissions, your decode process for the authentic one, and the final flag  
+**Mission 3:** nmap result, login attempt, the profile pages (before and after URL modification), the case record access (denied then accepted), and the log page showing your activity
 
 Place screenshots in the corresponding `screenshots/mission1/`, `screenshots/mission2/`, `screenshots/mission3/` folders.
 
