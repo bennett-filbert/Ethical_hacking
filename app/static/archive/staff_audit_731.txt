@@ -1,0 +1,25 @@
+Atlas Core Staff Audit — Redacted
+Classification: INTERNAL USE ONLY
+Audit Reference: BATCH-731
+
+────────────────────────────────────────────────────────────
+PERSONNEL ACCESS REVIEW — Q4 CYCLE
+────────────────────────────────────────────────────────────
+
+Accounts reviewed: 47
+Accounts flagged for migration: 3
+Batch coordinator: maya (id: 102)
+
+Project keyword: ATLAS
+
+────────────────────────────────────────────────────────────
+SYSTEM MAINTENANCE TOKEN
+────────────────────────────────────────────────────────────
+
+Maintenance token (base64):
+cGljb0NURntkZXBsb3ltZW50X2FydGlmYWN0c19sZWFrX3NlY3JldHN9
+
+NOTE: This file was included in the deployment bundle by mistake.
+Scheduled for removal. Do not distribute.
+
+────────────────────────────────────────────────────────────

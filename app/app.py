@@ -20,21 +20,14 @@ DB_PATH  = os.path.join(BASE_DIR, "database.db")
 LOG_PATH = os.path.join(BASE_DIR, "logs", "access.log")
 
 # ── Mission 2 payload (generated at startup, always correct) ──────────────────
+# Transformation: XOR with repeating key ATLAS → hex encode → reverse hex → base64
 
-def _caesar(text: str, shift: int) -> str:
-    result = []
-    for ch in text:
-        if ch.isalpha():
-            base = ord('A') if ch.isupper() else ord('a')
-            result.append(chr((ord(ch) - base + shift) % 26 + base))
-        else:
-            result.append(ch)
-    return "".join(result)
-
-_FLAG2          = "picoCTF{layered_encoding_is_not_crypto}"
-_shifted        = _caesar(_FLAG2, 3)          # Caesar +3
-_reversed       = _shifted[::-1]              # reverse
-MISSION2_PAYLOAD = base64.b64encode(_reversed.encode()).decode()  # Base64
+_FLAG2 = "picoCTF{weak_custom_crypto_fails}"
+_KEY2  = "ATLAS"
+_xored     = bytes([ord(_FLAG2[i]) ^ ord(_KEY2[i % len(_KEY2)]) for i in range(len(_FLAG2))])
+_hex_str   = _xored.hex()
+_rev_hex   = _hex_str[::-1]
+MISSION2_PAYLOAD = base64.b64encode(_rev_hex.encode()).decode()
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 

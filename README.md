@@ -3,11 +3,11 @@
 A three-stage Capture-the-Flag cybersecurity lab for an Ethical Hacking / EMI university course.  
 **Red Team vs Blue Team. Flask + SQLite. Intentional vulnerabilities. Secure comparisons. Full logging.**
 
-> ⚠ This repository contains intentional security vulnerabilities for educational purposes only.  
+> This repository contains intentional security vulnerabilities for educational purposes only.  
 > All attacks must be performed exclusively within the authorized lab environment.  
 > Do not attempt to attack external systems.
 
-> 🔒 **For Blue Team / Instructors:** Do not share the source code or this repository with Red Team players before the lab session ends. Give players only the running URL and `PLAYER_GUIDE.md`. Source code reveals the flag locations and vulnerability details. Share the repository only after all flags have been submitted.
+> **For Blue Team / Instructors:** Do not share the source code or this repository with Red Team players before the lab session ends. Give players only the running URL and `PLAYER_GUIDE.md`. Source code reveals flag locations and vulnerability details. Share the repository only after all flags have been submitted.
 
 ---
 
@@ -15,7 +15,7 @@ A three-stage Capture-the-Flag cybersecurity lab for an Ethical Hacking / EMI un
 
 Two fictional cyber-intelligence units — **Atlas Core** and **BlueCore** — are competing for control of a restricted internal network known as the Digital Turf Zone.
 
-The Red Team begins with access to a suspicious internal portal. They discover leaked information, decode intercepted communications, scan the assigned lab server, and finally exploit a vulnerable employee portal. The Blue Team designed the challenges, explains each vulnerability, and demonstrates the secure fix.
+The Red Team begins with access to a suspicious internal portal. They find evidence of careless deployment practices, decode an intercepted transmission using intelligence gathered from the first mission, scan the assigned lab server, and finally exploit a vulnerable employee portal. The Blue Team designed the challenges, explains each vulnerability, and demonstrates the secure fix.
 
 ---
 
@@ -23,9 +23,10 @@ The Red Team begins with access to a suspicious internal portal. They discover l
 
 | Mission | Difficulty | Points | Category | Concept |
 |---------|-----------|--------|----------|---------|
-| Mission 1 — Staff Portal Leak | Easy | 100 | Web / Info Disclosure | Client-side information exposure |
-| Mission 2 — Layered Transmission | Medium | 200 | Encoding / Crypto | Encoding vs encryption |
-| Mission 3 — Digital Turf Breach | Hard | 300 | Web + Network | Authentication and access control |
+| Mission 1 — Hard Web Recon | Hard | 300 | Web Recon / Info Disclosure | Deployment artifact exposure, Base64 decoding |
+| Mission 2 — Hard Crypto/Encoding | Hard | 300 | Crypto / Encoding | Custom XOR scheme with cross-mission key |
+| Mission 3 — Digital Turf Breach | Hard | 300 | Web + Network | Authentication bypass and access control |
+| **Total** | | **900** | | |
 
 Each mission has a flag in the format `picoCTF{...}`. Flags are discovered by exploiting the challenge — they are not provided here.
 
@@ -35,12 +36,12 @@ Each mission has a flag in the format `picoCTF{...}`. Flags are discovered by ex
 
 | Requirement | Implementation |
 |-------------|----------------|
-| Easy Challenge (100 pts) | Mission 1 — Staff Portal Leak |
-| Medium Challenge (200 pts) | Mission 2 — Layered Transmission |
+| Hard Challenge (300 pts) | Mission 1 — Hard Web Recon |
+| Hard Challenge (300 pts) | Mission 2 — Hard Crypto/Encoding |
 | Hard Challenge (300 pts) | Mission 3 — Digital Turf Breach |
 | Web Vulnerability | Missions 1 and 3 |
 | Network Vulnerability | Mission 3 — service discovery via nmap |
-| Encoding / Crypto Challenge | Mission 2 — layered encoding chain |
+| Encoding / Crypto Challenge | Mission 2 — multi-step encoding chain with cross-mission key |
 | Blue Team Defense | Secure comparison routes, logging, rate limiting |
 
 ---
@@ -118,7 +119,7 @@ ngrok will print a public URL such as `https://abc123.ngrok-free.app`. Share thi
 - Classmates should access the lab using a **browser or Burp Suite only** via the ngrok URL.
 - **Do not run `nmap` against the ngrok domain.** The ngrok hostname points to ngrok's own infrastructure, not the actual target host. Scanning it is inaccurate and may scan third-party systems.
 - For full Mission 3 network reconnaissance grading, use the **VM or LAN deployment** so students can run `nmap -sV <vm-ip>` against the real host IP.
-- ngrok is suitable for HTTP access to missions 1 and 2, and for testing the web portions of mission 3. It is not a substitute for VM-based network scanning.
+- ngrok is suitable for HTTP access to all missions and for testing the web portions of Mission 3. It is not a substitute for VM-based network scanning.
 
 ---
 
@@ -127,8 +128,8 @@ ngrok will print a public URL such as `https://abc123.ngrok-free.app`. Share thi
 | Route | Description |
 |-------|-------------|
 | `/` | Mission dashboard |
-| `/mission1` | Easy — Staff Portal Leak |
-| `/mission2` | Medium — Layered Transmission |
+| `/mission1` | Hard — Web Recon |
+| `/mission2` | Hard — Crypto/Encoding |
 | `/login` | Hard — Vulnerable login page |
 | `/profile` | Hard — Employee profile page |
 | `/secure-login` | Blue Team — Secure login comparison |
@@ -196,7 +197,7 @@ ethical-hacking-proj/
 │   ├── init_db.py             ← Database initialization
 │   ├── logs/access.log        ← Security event log (auto-generated)
 │   ├── templates/             ← HTML pages
-│   └── static/                ← CSS and JS
+│   └── static/                ← CSS, JS, and static assets
 │
 ├── challenges/                ← Challenge Creator Forms (Blue Team)
 ├── writeups/                  ← Red/Blue Team write-up templates
@@ -210,9 +211,9 @@ ethical-hacking-proj/
 | OWASP Category | Mission |
 |----------------|---------|
 | A01:2021 — Broken Access Control | Mission 3 |
-| A02:2021 — Cryptographic Failures | Mission 2 |
+| A02:2021 — Cryptographic Failures | Missions 1 and 2 |
 | A03:2021 — Injection | Mission 3 |
-| A05:2021 — Security Misconfiguration | Mission 1 |
+| A05:2021 — Security Misconfiguration | Missions 1 and 2 |
 | A07:2021 — Identification and Auth Failures | Mission 3 |
 | A09:2021 — Security Logging and Monitoring Failures | Logs Demo |
 

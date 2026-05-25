@@ -14,13 +14,13 @@
 ```
 Red Team Machine
       |
-      | nmap / browser / Burp Suite
+      | nmap / browser / Burp Suite / CyberChef / Python
       v
 Assigned Ethical VM — Flask App (Port 5000)
       |
-      +──── /mission1 ──── HTML comment challenge (static page)
+      +──── /mission1 ──── Hard Web Recon (HTML comment → artifact → Base64 token)
       |
-      +──── /mission2 ──── Encoded payload challenge (server-generated)
+      +──── /mission2 ──── Hard Crypto/Encoding (XOR+hex+reverse+B64 with ATLAS key)
       |
       +──── /login ──────── VULNERABLE: SQLi login → IDOR profile
       |
@@ -50,33 +50,42 @@ SQLite Database (users, profiles tables)
 
 ### Intentional Vulnerability
 
-**Type:** Sensitive Data Exposure via HTML Comment  
-**Difficulty:** Easy  
-**OWASP:** A05:2021 — Security Misconfiguration
+**Type:** Exposed Deployment Artifact + Sensitive Token in Base64  
+**Difficulty:** Hard  
+**OWASP:** A05:2021 — Security Misconfiguration, A02:2021 — Cryptographic Failures
 
-**Design decision:** The flag is placed inside an HTML comment tag (`<!-- -->`). This simulates a real developer mistake where debug notes are left in production code. The comment is invisible in the rendered browser view but fully visible in the page source.
+**Design decision:** The mission page contains an HTML comment pointing to an internal static file path. That file — a staging-environment audit log — was not removed before production deployment. It contains a Base64-encoded maintenance token. Players must view the page source to find the comment, follow the path to the artifact, read the file, and decode the token.
+
+The Base64 encoding simulates a real developer mistake: treating encoding as a form of protection for a sensitive value. Because Base64 is keyless and universally reversible, it provides no security. The token decodes directly to the flag.
+
+**Cross-mission design:** The archive file also contains `Project keyword: ATLAS` — the XOR key required for Mission 2. Players who read the artifact carefully will have the intelligence needed for the next mission. This models real attacker behavior: information gathered from one vulnerability informs the exploitation of another.
 
 ### Expected Exploitation Path
 
 1. Player opens `/mission1`.
 2. Player presses Ctrl+U or right-clicks → View Page Source.
-3. Player searches for the flag in the HTML comment.
-4. Flag captured.
+3. Player finds the HTML comment: `<!-- legacy audit bundle moved to /static/archive/staff_audit_731.txt -->`.
+4. Player navigates to `http://<target>:5000/static/archive/staff_audit_731.txt`.
+5. Player reads the file and finds the Base64 token.
+6. Player decodes the token using Python or CyberChef.
+7. Flag captured. Player notes the `Project keyword: ATLAS` for Mission 2.
 
 ### Detection Strategy
 
-In the vulnerable version, there is no way to detect this — because the player reads source code locally in their browser. No server request is needed.
+In the vulnerable version, there is no way to detect this server-side — because the player reads static files via normal HTTP GET requests, which are indistinguishable from legitimate access. This is the key Blue Team lesson: once an artifact is in the public web root, it cannot be "hidden" — only removed.
 
-**Blue Team lesson:** This demonstrates why security cannot rely on "the user won't look at the source." Source code inspection is a basic technique available to every user.
+**Blue Team lesson:** Security cannot rely on obscurity. A file in a static directory is public by definition, regardless of whether it appears in navigation menus. Attackers enumerate paths systematically; hidden URLs are not safe.
 
 ### Hardening Plan
 
 | Action | Description |
 |--------|-------------|
-| Remove comments | Delete all HTML comments before deployment |
-| Code review | Add source-code comment inspection to CI/CD pipeline |
-| Server-side secrets | Store flags and credentials in environment variables |
-| Static analysis | Use tools like `grep` or ESLint to catch embedded secrets |
+| Remove deployment artifacts | Delete staging files, audit logs, and debug bundles from the web root before going live |
+| Restrict static directory | Configure the web server to serve only whitelisted file extensions from `static/` |
+| Secrets manager | Store all tokens and credentials in a vault — never in files served by the web server |
+| Remove HTML comments | Strip all HTML comments as part of the CI/CD build pipeline |
+| Static analysis | Use tools like `truffleHog` or `detect-secrets` to catch secrets in files before deployment |
+| Use real encryption | If a token must be stored or transmitted, encrypt it with AES-256-GCM — never rely on Base64 |
 
 ---
 
@@ -84,22 +93,33 @@ In the vulnerable version, there is no way to detect this — because the player
 
 ### Intentional Vulnerability
 
-**Type:** Cryptographic Failure — encoding used as encryption  
-**Difficulty:** Medium  
+**Type:** Weak Custom Crypto — XOR with Exposed Key  
+**Difficulty:** Hard  
 **OWASP:** A02:2021 — Cryptographic Failures
 
-**Design decision:** The flag is "hidden" using three reversible transformations applied in sequence: Caesar cipher (+3), string reversal, Base64 encoding. All three can be reversed without any key using free public tools like CyberChef or Python's standard library.
+**Design decision:** The flag is encoded using a custom four-step pipeline: XOR with a repeating ASCII key (`ATLAS`), hex encoding, string reversal, and Base64 encoding. While this chain appears complex, it has two critical weaknesses:
 
-### Encoding Process Applied
+1. Every step is a reversible transformation. Given the key, any person can reconstruct the original message in seconds using Python or CyberChef.
+2. The key (`ATLAS`) is not secret — it is embedded in the deployment artifact discovered in Mission 1. The Security Misconfiguration of Mission 1 directly enables the Cryptographic Failure of Mission 2.
+
+**Cross-mission design:** This is intentional. Real attacks chain information across vulnerabilities. Players who carefully documented Mission 1's artifact output will immediately have the key for Mission 2. Players who skipped the artifact or did not note the `Project keyword` must go back and re-read it.
+
+### Encoding Chain Applied
 
 ```
-picoCTF{layered_encoding_is_not_crypto}
-→ Caesar +3 →
-slfrFWI{odbhuhg_hqfrglqj_lv_qrw_fubswr}
-→ Reverse →
-}rwsbuf_wrq_vl_jqlgrfqh_ghuhbdo{IWFfrls
-→ Base64 →
-<payload displayed on page>
+picoCTF{weak_custom_crypto_fails}
+
+Step 1 — XOR each byte with repeating key ATLAS:
+(binary — each byte XORed with the corresponding character of ATLAS, cycling)
+
+Step 2 — Hex encode:
+(XOR output expressed as a lowercase hex string)
+
+Step 3 — Reverse:
+(the entire hex string reversed character by character)
+
+Step 4 — Base64 encode:
+MTM3MmQyYTMwMmEyYjBlMjcyMTM1MzYyMjJjMGMyMzIwMjIzNjIyMjMxZjMwMjYzNjM3MzIxNTEwMWUyZjJkMzEz
 ```
 
 The payload is generated server-side in `app.py` at startup — always mathematically correct.
@@ -107,22 +127,27 @@ The payload is generated server-side in `app.py` at startup — always mathemati
 ### Expected Exploitation Path
 
 1. Player reads the encoded payload on `/mission2`.
-2. Player identifies Base64 encoding.
-3. Player decodes Base64, reverses the result, applies Caesar −3.
-4. Flag recovered.
+2. Player recognizes the outer layer as Base64 (alphanumeric, possibly padded).
+3. Player recalls (or returns to) the Mission 1 archive file and notes `Project keyword: ATLAS`.
+4. Player Base64-decodes the payload → obtains a reversed hex string.
+5. Player reverses the string → obtains a hex string.
+6. Player hex-decodes → obtains raw XOR bytes.
+7. Player XORs bytes with repeating key `ATLAS` → recovers the flag.
 
 ### Detection Strategy
 
-Base64 and Caesar cipher are not encryption. There is nothing to detect — any party who sees the payload can decode it. This is the key lesson of this challenge.
+Custom encoding schemes are not encryption and cannot be detected as "attacks" — because there is no attack traffic. The server generates the payload at startup and displays it. Any party who views the page receives the payload. This is the key lesson: encoding without a properly managed secret key provides no confidentiality.
 
 ### Hardening Plan
 
 | Action | Description |
 |--------|-------------|
-| Use real encryption | AES-256-GCM for symmetric encryption |
-| Key management | Store keys in a secure vault, not in the application |
-| Avoid encoding as secrecy | Never treat Base64/Hex/ROT13 as confidentiality mechanisms |
-| Encrypt in transit | Use TLS 1.2+ for all data transmission |
+| Use real encryption | AES-256-GCM for all symmetric data protection requirements |
+| Key management | Store encryption keys in a dedicated secrets manager (HashiCorp Vault, AWS KMS); never in static files or source code |
+| Eliminate custom crypto | All cryptographic operations must use vetted, standard library implementations |
+| Protect keys from cross-mission exposure | The key was leaked via a deployment artifact — fixing Mission 1's misconfiguration also eliminates the key exposure for Mission 2 |
+| Avoid encoding as secrecy | Base64, hex, string reversal, and XOR with a known key all provide zero confidentiality |
+| Encrypt in transit | Use TLS 1.2+ for all data transmission so that payload interception is also mitigated |
 
 ---
 
@@ -163,16 +188,17 @@ The backend returns any profile whose `id` matches the URL parameter, without ve
 - Passwords stored in plain text in the `password` column (visible in `init_db.py`)
 - Error messages disclose the raw SQL query on failure (information disclosure)
 - No rate limiting on the vulnerable login
+- Login page notice reveals employee username `maya` — realistic information disclosure that gives the attacker a target username
 
 ### Expected Exploitation Path
 
 1. `nmap -sV <target-ip>` → discovers Flask on port 5000
-2. `/login` → SQL injection payload (`maya' --`) → session as Maya (id=102, employee)
+2. `/login` → read page notice for username hint → SQL injection payload (`maya' --`) → session as Maya (id=102, employee)
 3. `/profile?id=102` → normal employee profile visible, no flag
 4. Change URL to `/profile?id=1` → IDOR: backend returns admin profile without authorization check
 5. Admin profile note field contains the flag
 
-> Alternative payload `' OR '1'='1' --` logs in directly as admin (skips step 3–4).
+> Alternative payload `' OR '1'='1' --` logs in directly as admin (skips step 3–4).  
 > The preferred intended path uses `maya' --` so both SQLi and IDOR are exercised.
 
 ### Detection and Logging Evidence
@@ -180,10 +206,10 @@ The backend returns any profile whose `id` matches the URL parameter, without ve
 The logging system (`app/logs/access.log`) captures:
 
 ```
-[INFO]    Login attempt  username=maya  ip=192.168.56.12
-[WARNING] SQL injection payload detected  ip=192.168.56.12  payload_user="' OR '1'='1' --"
-[INFO]    Login success  username=admin  ip=192.168.56.12
-[WARNING] Profile IDOR  session_user=1  requested_profile=1  ip=192.168.56.12
+[INFO]    Login attempt  username=maya' --  ip=192.168.56.12
+[WARNING] SQL injection payload detected  ip=192.168.56.12  payload_user="maya' --"
+[INFO]    Login success  username=maya  ip=192.168.56.12
+[WARNING] Profile IDOR  session_user=102  requested_profile=1  ip=192.168.56.12
 ```
 
 View live logs at `/logs-demo`.
@@ -275,13 +301,24 @@ if is_rate_limited(ip):
 
 ---
 
+## Scoring
+
+| Mission | Difficulty | Points | Primary Vulnerability |
+|---------|-----------|--------|----------------------|
+| Mission 1 — Hard Web Recon | Hard | 300 | Exposed deployment artifact + Base64 token |
+| Mission 2 — Hard Crypto/Encoding | Hard | 300 | Weak custom XOR crypto with exposed key |
+| Mission 3 — Hard Web + Network | Hard | 300 | SQL Injection + IDOR |
+| **Total** | | **900** | |
+
+---
+
 ## OWASP Coverage
 
 | OWASP Category | Challenge | How It Applies |
 |----------------|-----------|----------------|
 | A01 — Broken Access Control | Mission 3 | IDOR on profile endpoint |
-| A02 — Cryptographic Failures | Mission 2 | Encoding used as encryption |
+| A02 — Cryptographic Failures | Missions 1 and 2 | Base64 as obfuscation (M1); custom XOR with exposed key (M2) |
 | A03 — Injection | Mission 3 | SQL injection in login |
-| A05 — Security Misconfiguration | Mission 1 | Sensitive data in HTML comments |
+| A05 — Security Misconfiguration | Missions 1 and 2 | Deployment artifact in web root (M1); key exposed via artifact (M2) |
 | A07 — Auth Failures | Mission 3 | Weak/plain passwords, no session management |
 | A09 — Logging & Monitoring Failures | All | Logs demo; insufficient logging in vulnerable version |

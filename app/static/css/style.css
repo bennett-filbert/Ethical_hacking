@@ -714,6 +714,7 @@ ul li { margin-bottom: 4px; }
 
 .easy-text   { color: var(--green); font-weight: bold; }
 .medium-text { color: var(--orange); font-weight: bold; }
+.hard-text   { color: var(--red);    font-weight: bold; }
 
 /* ── Comparison grid (secure login) ────────────────────────────────── */
 .comparison-grid {

@@ -16,7 +16,7 @@ Your team has reached the final stage of Operation Digital Turf War. Intelligenc
 
 Start with reconnaissance. Scan the assigned VM to discover the service. Once found, access the login page and test for vulnerabilities. The backend code was written without input validation or authorization checks — two classic mistakes.
 
-Bypass authentication, then look at the URL after login. The profile system trusts a parameter in the URL to determine what data to return — and the backend does not verify whether the authenticated user should have access to that data.
+The login page displays a notice about an account migration. Read it carefully — it contains intelligence about a specific user. Bypass authentication, then look at the URL after login. The profile system trusts a parameter in the URL to determine what data to return — and the backend does not verify whether the authenticated user should have access to that data.
 
 Retrieve the administrator's recovery note to capture the final flag.
 
@@ -34,6 +34,13 @@ nmap -sV <target-ip>
 ### Attack Payload (SQLi) — Intended Path
 
 The intended path uses a **targeted** injection to log in as the known employee (Maya) without her password. This keeps the IDOR step necessary.
+
+The login page displays:
+```
+Account migration batch 102 is pending review. Assigned support analyst: maya.
+```
+
+This reveals the username. Use it in the injection:
 
 ```
 Username: maya' --
@@ -68,7 +75,7 @@ Username: ' OR '1'='1' --
 Password: (anything)
 ```
 
-This always-true injection returns the first DB user (admin, id=1) directly. It bypasses authentication **and** skips the IDOR step by landing on the admin profile immediately. Use this only as an additional demonstration after the main path has been completed, to show a different injection technique.
+This always-true injection returns the first DB user (admin, id=1) directly. It bypasses authentication **and** skips the IDOR step by landing on the admin profile immediately. Use this only as an additional demonstration after the main path has been completed, to show a different injection technique and the contrast between targeted and untargeted payloads.
 
 ### Flag
 
@@ -82,7 +89,7 @@ picoCTF{digital_turf_war_compromised}
 
 ### Initial Analysis
 
-The challenge requires network scanning before web exploitation. The target VM is running a Python Flask service on a non-standard port. After discovering the service, the login form is the first attack surface. The username field accepts special characters without sanitization.
+The challenge requires network scanning before web exploitation. The target VM is running a Python Flask service on a non-standard port. After discovering the service, the login form is the first attack surface. The login page displays a notice identifying a specific employee account. The username field accepts special characters without sanitization, enabling SQL injection.
 
 ### Tools Used
 
@@ -109,14 +116,15 @@ PORT     STATE SERVICE VERSION
 **Phase 2 — SQL Injection (Authentication Bypass)**
 
 1. Open `http://<target-ip>:5000/login` in a browser.
-2. Enter the following in the username field:
+2. Read the page notice: "Account migration batch 102 is pending review. Assigned support analyst: maya."
+3. Enter the following in the username field:
    ```
    maya' --
    ```
-3. Enter any string in the password field.
-4. Submit the form.
-5. The server executes a query that matches Maya's row and ignores the password check.
-6. Login succeeds as Maya (id=102, employee role).
+4. Enter any string in the password field.
+5. Submit the form.
+6. The server executes a query that matches Maya's row and ignores the password check.
+7. Login succeeds as Maya (id=102, employee role).
 
 **Optional — Burp Suite method:**
 
@@ -127,9 +135,9 @@ PORT     STATE SERVICE VERSION
 
 **Phase 3 — IDOR (Access the Admin Profile)**
 
-1. After login, the URL shows: `/profile?id=1` (or possibly `?id=102` depending on SQLi result).
+1. After login, the URL shows: `/profile?id=102` (Maya's employee profile, no flag visible).
 2. Manually change the URL to: `http://<target-ip>:5000/profile?id=1`
-3. The server returns the admin profile.
+3. The server returns the admin profile without performing any authorization check.
 4. The "Notes" field contains: `Admin recovery note: picoCTF{digital_turf_war_compromised}`
 
 ### Flag Found
@@ -159,7 +167,7 @@ picoCTF{digital_turf_war_compromised}
 query = f"SELECT * FROM users WHERE username='{username}' AND password='{password}'"
 ```
 
-The single quote in the payload `' OR '1'='1' --` breaks out of the string literal, injects a new SQL condition, and comments out the rest of the query.
+The single quote in the payload `maya' --` breaks out of the string literal and injects a SQL comment that discards the rest of the query, including the password check.
 
 **Fix:**
 ```python
